@@ -55,7 +55,13 @@ END $$;
 -- Step 5: Create new policies
 CREATE POLICY "Users can insert their own profile on signup"
   ON public.profiles FOR INSERT
+  TO authenticated
   WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Service role can insert profiles"
+  ON public.profiles FOR INSERT
+  TO service_role
+  WITH CHECK (true);
 
 CREATE POLICY "Teachers can update learner approval status"
   ON public.profiles FOR UPDATE
@@ -72,6 +78,31 @@ CREATE POLICY "Teachers can update learner approval status"
       WHERE id = auth.uid() AND role = 'teacher'
     ) AND role = 'learner'
   );
+
+-- Step 6: Create trigger function to auto-create profile on signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, role, full_name, approved)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'role', 'learner'),
+    COALESCE(NEW.raw_user_meta_data->>'full_name', 'User'),
+    CASE 
+      WHEN COALESCE(NEW.raw_user_meta_data->>'role', 'learner') = 'teacher' THEN TRUE
+      ELSE FALSE
+    END
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Step 7: Create trigger on auth.users
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- Done!
 SELECT 'Approval system migration completed successfully!' AS message;
