@@ -68,11 +68,16 @@ const TeacherDashboard: React.FC = () => {
         .eq('role', 'learner');
 
       if (studentsError) throw studentsError;
-      setTotalStudents(studentsData?.filter(s => s.approved).length || 0);
       
-      // Load pending students
-      const pending = studentsData?.filter(s => !s.approved) || [];
+      console.log('All students:', studentsData); // Debug
+      
+      setTotalStudents(studentsData?.filter(s => s.approved === true).length || 0);
+      
+      // Load pending students (approved is false or null)
+      const pending = studentsData?.filter(s => s.approved === false || s.approved === null) || [];
       setPendingStudents(pending);
+      
+      console.log('Pending students:', pending); // Debug
 
       // Load quizzes count
       const { count, error: quizzesError } = await supabase
@@ -268,13 +273,18 @@ const TeacherDashboard: React.FC = () => {
                 <>
                   <IonCard>
                     <IonCardHeader>
-                      <IonCardTitle>⏳ Pending Student Approvals</IonCardTitle>
+                      <IonCardTitle>⏳ Pending Student Approvals ({pendingStudents.length})</IonCardTitle>
                     </IonCardHeader>
                     <IonCardContent>
                       {pendingStudents.length === 0 ? (
-                        <p className="ion-text-center" style={{ color: '#666', padding: '20px' }}>
-                          No pending student registrations
-                        </p>
+                        <div>
+                          <p className="ion-text-center" style={{ color: '#666', padding: '20px' }}>
+                            No pending student registrations
+                          </p>
+                          <p className="ion-text-center" style={{ fontSize: '12px', color: '#999' }}>
+                            Check browser console (F12) for debug logs
+                          </p>
+                        </div>
                       ) : (
                         <IonList>
                           {pendingStudents.map((student) => (

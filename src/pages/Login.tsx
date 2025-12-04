@@ -13,15 +13,18 @@ import {
   IonCardContent,
   IonCardHeader,
   IonCardTitle,
-  IonToast
+  IonToast,
+  IonIcon
 } from '@ionic/react';
+import { eye, eyeOff } from 'ionicons/icons';
 import { useHistory } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [showToast, setShowToast] = useState(false);
   const { signIn } = useAuth();
@@ -32,7 +35,14 @@ const Login: React.FC = () => {
     setError('');
 
     try {
-      await signIn(email, password);
+      let emailToUse = usernameOrEmail;
+      
+      // If it doesn't look like an email, convert username to email format
+      if (!usernameOrEmail.includes('@')) {
+        emailToUse = `${usernameOrEmail.toLowerCase()}@gmail.com`;
+      }
+      
+      await signIn(emailToUse, password);
       
       // Get the user's profile to check their role
       const { data: { user } } = await supabase.auth.getUser();
@@ -75,11 +85,12 @@ const Login: React.FC = () => {
             <IonCardContent>
               <form onSubmit={handleLogin}>
                 <IonItem>
-                  <IonLabel position="stacked">Email</IonLabel>
+                  <IonLabel position="stacked">Username or Email</IonLabel>
                   <IonInput
-                    type="email"
-                    value={email}
-                    onIonChange={(e: any) => setEmail(e.detail.value!)}
+                    type="text"
+                    value={usernameOrEmail}
+                    onIonChange={(e: any) => setUsernameOrEmail(e.detail.value!)}
+                    placeholder="Enter your username or email"
                     required
                   />
                 </IonItem>
@@ -87,11 +98,18 @@ const Login: React.FC = () => {
                 <IonItem>
                   <IonLabel position="stacked">Password</IonLabel>
                   <IonInput
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     value={password}
                     onIonChange={(e: any) => setPassword(e.detail.value!)}
                     required
                   />
+                  <IonButton
+                    fill="clear"
+                    slot="end"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    <IonIcon icon={showPassword ? eyeOff : eye} />
+                  </IonButton>
                 </IonItem>
 
                 <IonButton expand="block" type="submit" className="ion-margin-top">

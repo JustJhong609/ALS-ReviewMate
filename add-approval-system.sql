@@ -82,16 +82,22 @@ CREATE POLICY "Teachers can update learner approval status"
 -- Step 6: Create trigger function to auto-create profile on signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  user_role TEXT;
 BEGIN
+  -- Get the role from metadata, default to 'learner'
+  user_role := COALESCE(NEW.raw_user_meta_data->>'role', 'learner');
+  
   INSERT INTO public.profiles (id, email, role, full_name, approved)
   VALUES (
     NEW.id,
     NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'role', 'learner'),
+    user_role,
     COALESCE(NEW.raw_user_meta_data->>'full_name', 'User'),
+    -- Only teachers are auto-approved, learners need approval
     CASE 
-      WHEN COALESCE(NEW.raw_user_meta_data->>'role', 'learner') = 'teacher' THEN TRUE
-      ELSE FALSE
+      WHEN user_role = 'teacher' THEN true
+      ELSE false
     END
   );
   RETURN NEW;
