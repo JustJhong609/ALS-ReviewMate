@@ -11,6 +11,9 @@ export interface User {
   email: string;
   role: 'learner' | 'teacher';
   full_name: string;
+  approved: boolean;
+  approved_by?: string;
+  approved_at?: string;
   created_at: string;
 }
 

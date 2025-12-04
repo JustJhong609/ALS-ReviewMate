@@ -62,10 +62,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, fullName: string, role: 'learner' | 'teacher') => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { error, data } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: undefined, // Skip email verification
           data: {
             full_name: fullName,
             role: role
@@ -73,6 +74,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       });
       if (error) throw error;
+      
+      // Create profile with approved=false for learners, true for teachers
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            email: email,
+            role: role,
+            full_name: fullName,
+            approved: role === 'teacher' ? true : false
+          });
+        if (profileError) throw profileError;
+      }
     } catch (error: any) {
       throw new Error(error.message || 'Failed to sign up');
     }

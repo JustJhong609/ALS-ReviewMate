@@ -19,14 +19,14 @@ import {
   IonAlert,
   IonBadge
 } from '@ionic/react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useHistory } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase, Quiz, Question } from '../../lib/supabase';
 
 const QuizPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const history = useHistory();
   
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -184,13 +184,13 @@ const QuizPage: React.FC = () => {
                     }
                   </p>
                   
-                  <IonButton expand="block" onClick={() => navigate(-1)}>
+                  <IonButton expand="block" onClick={() => history.goBack()}>
                     Back to Subject
                   </IonButton>
                   <IonButton expand="block" fill="outline" onClick={() => window.location.reload()}>
                     Retake Quiz
                   </IonButton>
-                  <IonButton expand="block" fill="clear" onClick={() => navigate('/progress')}>
+                  <IonButton expand="block" fill="clear" onClick={() => history.push('/progress')}>
                     View Progress
                   </IonButton>
                 </div>
@@ -311,7 +311,7 @@ const QuizPage: React.FC = () => {
             {
               text: 'Exit',
               role: 'confirm',
-              handler: () => navigate(-1)
+              handler: () => history.goBack()
             }
           ]}
         />

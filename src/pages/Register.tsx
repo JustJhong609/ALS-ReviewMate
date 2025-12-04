@@ -17,19 +17,19 @@ import {
   IonSelect,
   IonSelectOption
 } from '@ionic/react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const Register: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [role, setRole] = useState<'learner' | 'teacher'>('learner');
+  const [role] = useState<'learner' | 'teacher'>('learner'); // Always learner, teachers added manually
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showToast, setShowToast] = useState(false);
   const { signUp } = useAuth();
-  const navigate = useNavigate();
+  const history = useHistory();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,10 +44,10 @@ const Register: React.FC = () => {
 
     try {
       await signUp(email, password, fullName, role);
-      setSuccess('Registration successful! Please check your email to verify your account.');
+      setSuccess('Registration successful! Your account is pending teacher approval. You can now login.');
       setShowToast(true);
       setTimeout(() => {
-        navigate('/login');
+        history.push('/login');
       }, 3000);
     } catch (err: any) {
       setError(err.message);
@@ -103,17 +103,6 @@ const Register: React.FC = () => {
                   />
                 </IonItem>
 
-                <IonItem>
-                  <IonLabel position="stacked">I am a...</IonLabel>
-                  <IonSelect
-                    value={role}
-                    onIonChange={(e: any) => setRole(e.detail.value)}
-                  >
-                    <IonSelectOption value="learner">Learner</IonSelectOption>
-                    <IonSelectOption value="teacher">Teacher</IonSelectOption>
-                  </IonSelect>
-                </IonItem>
-
                 <IonButton expand="block" type="submit" className="ion-margin-top">
                   Register
                 </IonButton>
@@ -121,7 +110,7 @@ const Register: React.FC = () => {
 
               <div className="ion-text-center ion-margin-top">
                 <p>Already have an account?</p>
-                <IonButton fill="clear" onClick={() => navigate('/login')}>
+                <IonButton fill="clear" onClick={() => history.push('/login')}>
                   Login Here
                 </IonButton>
               </div>

@@ -16,7 +16,7 @@ import {
   IonIcon,
   IonButtons
 } from '@ionic/react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase, Subject } from '../../lib/supabase';
 import { logOutOutline, statsChartOutline } from 'ionicons/icons';
@@ -25,7 +25,7 @@ const LearnerDashboard: React.FC = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const { user, signOut } = useAuth();
-  const navigate = useNavigate();
+  const history = useHistory();
 
   useEffect(() => {
     loadSubjects();
@@ -49,7 +49,7 @@ const LearnerDashboard: React.FC = () => {
 
   const handleLogout = async () => {
     await signOut();
-    navigate('/login');
+    history.push('/login');
   };
 
   return (
@@ -58,7 +58,7 @@ const LearnerDashboard: React.FC = () => {
         <IonToolbar color="primary">
           <IonTitle>ALS ReviewMate - Dashboard</IonTitle>
           <IonButtons slot="end">
-            <IonButton onClick={() => navigate('/progress')}>
+            <IonButton onClick={() => history.push('/progress')}>
               <IonIcon icon={statsChartOutline} />
             </IonButton>
             <IonButton onClick={handleLogout}>
@@ -91,7 +91,7 @@ const LearnerDashboard: React.FC = () => {
                   <IonCol size="12" sizeMd="6" sizeLg="4" key={subject.id}>
                     <IonCard
                       button
-                      onClick={() => navigate(`/subject/${subject.id}`)}
+                      onClick={() => history.push(`/subject/${subject.id}`)}
                       style={{ cursor: 'pointer' }}
                     >
                       <IonCardHeader>

@@ -1,8 +1,14 @@
 -- Sample Quiz Data for ALS ReviewMate
 -- Run this AFTER running supabase-schema.sql
 
--- Get subject IDs (these will vary, adjust based on your actual IDs)
--- You can find these in Supabase Table Editor → subjects table
+-- First, ensure subjects exist
+INSERT INTO public.subjects (name, description, icon) VALUES
+('Communication', 'English communication skills and literacy', '📖'),
+('Science', 'Natural and physical sciences', '🔬'),
+('Mathematics', 'Basic math and problem solving', '🔢'),
+('Filipino', 'Filipino language and culture', '🇵🇭'),
+('English', 'English language fundamentals', '📚')
+ON CONFLICT DO NOTHING;
 
 -- Sample: English Quiz
 INSERT INTO public.quizzes (subject_id, title, description, difficulty, passing_score) 
@@ -12,7 +18,7 @@ VALUES (
   'Test your knowledge of basic English grammar',
   'easy',
   60
-);
+) RETURNING id;
 
 -- Get the quiz ID we just created
 DO $$

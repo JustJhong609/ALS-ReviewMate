@@ -111,23 +111,34 @@ The app will open at `http://localhost:3000`
 
 ### Creating Test Accounts
 
-**Teacher Account:**
-1. Go to `http://localhost:3000/register`
-2. Fill in:
-   - Full Name: Test Teacher
-   - Email: teacher@test.com
-   - Password: test123
-   - Role: Teacher
-3. Click Register
-4. Login with credentials
-
-**Learner Account:**
+**Learner Account (Self-Registration):**
 1. Go to `http://localhost:3000/register`
 2. Fill in:
    - Full Name: Test Student
    - Email: student@test.com
    - Password: test123
-   - Role: Learner
+3. Click Register (automatically created as Learner)
+4. Login with credentials
+
+**Teacher Account (Manual Creation):**
+Teachers cannot self-register for security. To create a teacher account:
+
+1. Have the teacher register as normal (they'll be created as learner)
+2. Go to Supabase Dashboard → SQL Editor
+3. Find their user ID:
+   ```sql
+   SELECT id, email FROM auth.users WHERE email = 'teacher@example.com';
+   ```
+4. Upgrade them to teacher:
+   ```sql
+   UPDATE public.profiles SET role = 'teacher' WHERE id = 'USER_ID_HERE';
+   ```
+5. They can now logout and login again with teacher access
+
+**Or use the provided SQL script:**
+```bash
+# See add-teacher.sql for detailed instructions
+```
 3. Click Register
 4. Login with credentials
 

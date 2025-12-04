@@ -15,8 +15,9 @@ import {
   IonCardTitle,
   IonToast
 } from '@ionic/react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -24,7 +25,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [showToast, setShowToast] = useState(false);
   const { signIn } = useAuth();
-  const navigate = useNavigate();
+  const history = useHistory();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +33,23 @@ const Login: React.FC = () => {
 
     try {
       await signIn(email, password);
-      navigate('/dashboard');
+      
+      // Get the user's profile to check their role
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        
+        // Redirect based on role
+        if (profile?.role === 'teacher') {
+          history.push('/teacher/dashboard');
+        } else {
+          history.push('/dashboard');
+        }
+      }
     } catch (err: any) {
       setError(err.message);
       setShowToast(true);
@@ -84,7 +101,7 @@ const Login: React.FC = () => {
 
               <div className="ion-text-center ion-margin-top">
                 <p>Don't have an account?</p>
-                <IonButton fill="clear" onClick={() => navigate('/register')}>
+                <IonButton fill="clear" onClick={() => history.push('/register')}>
                   Register Here
                 </IonButton>
               </div>

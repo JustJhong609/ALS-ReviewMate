@@ -5,6 +5,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   role TEXT NOT NULL CHECK (role IN ('learner', 'teacher')),
   full_name TEXT NOT NULL,
   avatar_url TEXT,
+  approved BOOLEAN DEFAULT FALSE,
+  approved_by UUID REFERENCES public.profiles(id),
+  approved_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -16,9 +19,43 @@ CREATE POLICY "Users can view their own profile"
   ON public.profiles FOR SELECT 
   USING (auth.uid() = id);
 
-CREATE POLICY "Users can update their own profile" 
+CREATE POLICY "Users can insert their own profile on signup"
+  ON public.profiles FOR INSERT
+  WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Users can update their own profile (except role)" 
   ON public.profiles FOR UPDATE 
-  USING (auth.uid() = id);
+  USING (auth.uid() = id)
+  WITH CHECK (
+    auth.uid() = id AND 
+    role = (SELECT role FROM public.profiles WHERE id = auth.uid())
+  );
+
+CREATE POLICY "Teachers can view all profiles"
+  ON public.profiles FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND role = 'teacher'
+    )
+  );
+
+CREATE POLICY "Teachers can update learner approval status"
+  ON public.profiles FOR UPDATE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND role = 'teacher'
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND role = 'teacher'
+    ) AND role = 'learner'
+  );
 
 -- Subjects table
 CREATE TABLE IF NOT EXISTS public.subjects (

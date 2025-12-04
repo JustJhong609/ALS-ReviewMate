@@ -17,7 +17,7 @@ import {
   IonIcon,
   IonBadge
 } from '@ionic/react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useHistory } from 'react-router-dom';
 import { supabase, Subject, Topic, Quiz } from '../../lib/supabase';
 import { bookOutline, trophyOutline } from 'ionicons/icons';
 
@@ -27,7 +27,7 @@ const SubjectView: React.FC = () => {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const history = useHistory();
 
   useEffect(() => {
     loadSubjectData();
@@ -145,7 +145,7 @@ const SubjectView: React.FC = () => {
                         <IonItem
                           key={quiz.id}
                           button
-                          onClick={() => navigate(`/quiz/${quiz.id}`)}
+                          onClick={() => history.push(`/quiz/${quiz.id}`)}
                         >
                           <IonLabel>
                             <h3>{quiz.title}</h3>

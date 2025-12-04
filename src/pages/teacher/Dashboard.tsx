@@ -22,7 +22,7 @@ import {
   IonSegment,
   IonSegmentButton
 } from '@ionic/react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { logOutOutline, peopleOutline, statsChartOutline, schoolOutline } from 'ionicons/icons';
@@ -45,14 +45,15 @@ interface SubjectAnalytics {
 }
 
 const TeacherDashboard: React.FC = () => {
-  const [segment, setSegment] = useState<'overview' | 'students' | 'subjects'>('overview');
+  const [segment, setSegment] = useState<'overview' | 'students' | 'pending' | 'subjects'>('pending');
   const [students, setStudents] = useState<StudentStats[]>([]);
+  const [pendingStudents, setPendingStudents] = useState<any[]>([]);
   const [subjectAnalytics, setSubjectAnalytics] = useState<SubjectAnalytics[]>([]);
   const [totalStudents, setTotalStudents] = useState(0);
   const [totalQuizzes, setTotalQuizzes] = useState(0);
   const [loading, setLoading] = useState(true);
   const { user, signOut } = useAuth();
-  const navigate = useNavigate();
+  const history = useHistory();
 
   useEffect(() => {
     loadDashboardData();
@@ -60,14 +61,18 @@ const TeacherDashboard: React.FC = () => {
 
   const loadDashboardData = async () => {
     try {
-      // Load students
+      // Load ALL students (approved and pending)
       const { data: studentsData, error: studentsError } = await supabase
         .from('profiles')
         .select('*')
         .eq('role', 'learner');
 
       if (studentsError) throw studentsError;
-      setTotalStudents(studentsData?.length || 0);
+      setTotalStudents(studentsData?.filter(s => s.approved).length || 0);
+      
+      // Load pending students
+      const pending = studentsData?.filter(s => !s.approved) || [];
+      setPendingStudents(pending);
 
       // Load quizzes count
       const { count, error: quizzesError } = await supabase
@@ -171,9 +176,48 @@ const TeacherDashboard: React.FC = () => {
     }
   };
 
+  const handleApproveStudent = async (studentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          approved: true,
+          approved_by: user?.id,
+          approved_at: new Date().toISOString()
+        })
+        .eq('id', studentId);
+
+      if (error) throw error;
+      
+      // Reload dashboard data
+      await loadDashboardData();
+    } catch (error) {
+      console.error('Error approving student:', error);
+      alert('Failed to approve student');
+    }
+  };
+
+  const handleRejectStudent = async (studentId: string) => {
+    try {
+      // Delete the user profile and auth user
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', studentId);
+
+      if (error) throw error;
+      
+      // Reload dashboard data
+      await loadDashboardData();
+    } catch (error) {
+      console.error('Error rejecting student:', error);
+      alert('Failed to reject student');
+    }
+  };
+
   const handleLogout = async () => {
     await signOut();
-    navigate('/login');
+    history.push('/login');
   };
 
   const getPerformanceColor = (score: number) => {
@@ -195,6 +239,11 @@ const TeacherDashboard: React.FC = () => {
         </IonToolbar>
         <IonToolbar>
           <IonSegment value={segment} onIonChange={(e: any) => setSegment(e.detail.value as any)}>
+            <IonSegmentButton value="pending">
+              <IonLabel>
+                Pending {pendingStudents.length > 0 && `(${pendingStudents.length})`}
+              </IonLabel>
+            </IonSegmentButton>
             <IonSegmentButton value="overview">
               <IonLabel>Overview</IonLabel>
             </IonSegmentButton>
@@ -215,6 +264,56 @@ const TeacherDashboard: React.FC = () => {
             </div>
           ) : (
             <>
+              {segment === 'pending' && (
+                <>
+                  <IonCard>
+                    <IonCardHeader>
+                      <IonCardTitle>⏳ Pending Student Approvals</IonCardTitle>
+                    </IonCardHeader>
+                    <IonCardContent>
+                      {pendingStudents.length === 0 ? (
+                        <p className="ion-text-center" style={{ color: '#666', padding: '20px' }}>
+                          No pending student registrations
+                        </p>
+                      ) : (
+                        <IonList>
+                          {pendingStudents.map((student) => (
+                            <IonItem key={student.id}>
+                              <IonLabel>
+                                <h2>{student.full_name}</h2>
+                                <p>{student.email}</p>
+                                <p style={{ fontSize: '12px', color: '#999' }}>
+                                  Registered: {new Date(student.created_at).toLocaleDateString()}
+                                </p>
+                              </IonLabel>
+                              <IonButton 
+                                color="success" 
+                                onClick={() => handleApproveStudent(student.id)}
+                                slot="end"
+                              >
+                                Approve
+                              </IonButton>
+                              <IonButton 
+                                color="danger" 
+                                fill="outline"
+                                onClick={() => {
+                                  if (window.confirm(`Reject ${student.full_name}? This will delete their account.`)) {
+                                    handleRejectStudent(student.id);
+                                  }
+                                }}
+                                slot="end"
+                              >
+                                Reject
+                              </IonButton>
+                            </IonItem>
+                          ))}
+                        </IonList>
+                      )}
+                    </IonCardContent>
+                  </IonCard>
+                </>
+              )}
+
               {segment === 'overview' && (
                 <>
                   <IonCard>
